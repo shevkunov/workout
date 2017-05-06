@@ -191,21 +191,23 @@ type JSON =
     | JSON_List of JSON list
     | JSON_Obj of (string * JSON) list
    *)
-     
-let rec stringify (json : JSON) : string =
+
+
+let rec tabbedStringify (prefix : string) (tab : string) (json : JSON) : string =
+    let itself = tabbedStringify (prefix + tab) tab
     let s_name (s : string) : string = "\"" + s + "\""
 
     let rec print_list (acc : string) (l : JSON list) : string = 
         match l with
-        | [obj] -> acc + (stringify obj)
-        | obj :: objs -> print_list (acc + (stringify obj) + ", ") objs
+        | [obj] -> acc + (itself obj)
+        | obj :: objs -> print_list (acc + (itself obj) + ", ") objs
         | _ -> "[]"
 
     let rec print_obj (acc: string) (l : (string * JSON) list) : string =
         match l with
-        | [(name, obj)] -> acc + (s_name name) + ":" + stringify obj
+        | [(name, obj)] -> acc + (prefix + tab) + (s_name name) + ":" + itself obj
         | (name, obj) :: objs ->
-            let line = (s_name name) + ":" + stringify obj + ",\n"
+            let line = (prefix + tab) + (s_name name) + ":" + itself obj + ",\n"
             print_obj (acc + line) objs
         | [] -> ""
 
@@ -217,13 +219,44 @@ let rec stringify (json : JSON) : string =
                         | true -> "true"
                         | _ -> "false"
     | JSON_List l -> "[" + (print_list "" l) + "]"
-    | JSON_Obj o -> "{\n" + (print_obj "" o) + "\n}"
+    | JSON_Obj o -> "{\n" + (print_obj "" o) + "\n" + prefix + "}"
+   
+let rec plainStringify (json : JSON) : string =
+    let s_name (s : string) : string = "\"" + s + "\""
+
+    let rec print_list (acc : string) (l : JSON list) : string = 
+        match l with
+        | [obj] -> acc + (plainStringify obj)
+        | obj :: objs -> print_list (acc + (plainStringify obj) + ", ") objs
+        | _ -> "[]"
+
+    let rec print_obj (acc: string) (l : (string * JSON) list) : string =
+        match l with
+        | [(name, obj)] -> acc + (s_name name) + ":" + plainStringify obj
+        | (name, obj) :: objs ->
+            let line = (s_name name) + ":" + plainStringify obj + ","
+            print_obj (acc + line) objs
+        | [] -> ""
+
+    match json with
+    | JSON_Null -> "null"
+    | JSON_String s -> s_name s
+    | JSON_Number n -> sprintf "%d" n
+    | JSON_Boolean b -> match b with
+                        | true -> "true"
+                        | _ -> "false"
+    | JSON_List l -> "[" + (print_list "" l) + "]"
+    | JSON_Obj o -> "{" + (print_obj "" o) + "}"
+
+// MAIN VERSION WITH TABULATIONS
+let stringify (json : JSON) : string = 
+    tabbedStringify "" "  " json
 
 //*** END Stringification ***//
 
 //*** BEGIN Random Generator ***//
 
-let generate = fun() ->
+let generate = fun() -> // this one generates only JSON_Obj,
     let MAX_FIELDS = 10
     let MAX_LIST_LEN = 5
     let MAX_NAME_LEN = 10
@@ -268,7 +301,9 @@ let generate = fun() ->
             | _ -> JSON_Obj acc
         genObj' [] ((rand MAX_FIELDS) + 1)
     genObj MAX_OBJ_DEPTH
+
 //*** END Random Generator ***//
+
 let lab3 = function
   | Object list -> 0
 
