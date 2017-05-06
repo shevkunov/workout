@@ -41,6 +41,7 @@ open System
 
 let explode (s:string) = [for i in s -> i]
 
+//*** BEGIN Parse ***//
 type Token = OpenBrace | CloseBrace | OpenBracket | CloseBracket | Colon | Comma
             | Null | String of string | Number of int | Boolean of bool
             /// is True | False needed?
@@ -163,35 +164,13 @@ let parse (str : string) =
     match ts with
     | [] -> obj
     | _ -> failwith "json parse' error"
+//*** TEST Parse ***//
+
+//*** ENG Parse ***//
 
 
 
-
-//*** Stringification ***//
-(*
-let tokenToString = function
-    | OpenBrace -> "{"
-    | CloseBrace -> "}"
-    | OpenBracket -> "["
-    | CloseBracket -> "]"
-    | Colon -> ":"
-    | Comma -> ","
-    | Null -> "null"
-    | String str -> "\"" + str + "\""
-    | Number num -> sprintf "%d" num
-    | Boolean b -> match b with
-                   | true -> "true"
-                   | _ -> "false"
-        
-type JSON = 
-    | JSON_Null
-    | JSON_String of string
-    | JSON_Number of int
-    | JSON_Boolean of bool
-    | JSON_List of JSON list
-    | JSON_Obj of (string * JSON) list
-   *)
-
+//*** BEGIN Stringification ***//
 
 let rec tabbedStringify (prefix : string) (tab : string) (json : JSON) : string =
     let itself = tabbedStringify (prefix + tab) tab
@@ -251,7 +230,12 @@ let rec plainStringify (json : JSON) : string =
 // MAIN VERSION WITH TABULATIONS
 let stringify (json : JSON) : string = 
     tabbedStringify "" "  " json
+//*** TEST Stringification ***//
+printfn "%s" (plainStringify (parse json))
+printfn "%s" (stringify (parse json))
 
+printfn "%s" (plainStringify (parse json2))
+printfn "%s" (stringify (parse json2))
 //*** END Stringification ***//
 
 //*** BEGIN Random Generator ***//
@@ -302,10 +286,21 @@ let generate = fun() -> // this one generates only JSON_Obj,
         genObj' [] ((rand MAX_FIELDS) + 1)
     genObj MAX_OBJ_DEPTH
 
+//*** TEST Random Generator ***//
+let gen = generate() // содержимое смотреть из консоли; повторить многа_раз
+printfn "%s" (stringify (parse (plainStringify (parse (stringify gen)))))
 //*** END Random Generator ***//
 
 //*** BEGIN LAB 3 ***//
 // Вариант 6: Составить список из всех повторяющихся ключей двух JSON-объектов //
+
+// Внимание: реализованы функции:
+// lab3 - проверяющий только собственные ключи обьекта
+// lab3Recursive - проверящий ключи полей (, полей, полей, полей... обьектов)
+// (при этом он не смотрит в обьекты лежащие в списке - это исправляется вставкой двух строк и
+// как-то совсем лишено смысла, по-моему)
+//
+// Также реализована функция projection, оставляющая обьекту поля только с разрешёнными ключами
 
 let getKeys obj: (string list) =
     let rec getKeys' (acc : string list) = function
@@ -363,6 +358,10 @@ let projection obj keys =
 
 let lab3 obj1 obj2 =
     intersect (getKeys obj1) (getKeys obj2)
+
+let lab3Recursive obj1 obj2 =
+    intersect (getKeysRecursive obj1) (getKeysRecursive obj2)
+
 //*** TEST LAB 3 ***//
 let j1 = """
 {
@@ -400,14 +399,29 @@ let j3 = """
 
 
 let jo1 = parse j1
-
 let jo2 = parse j2
-
 let jo3 = parse j3
+
+getKeys jo1 // should - ["aba"; "cappa"; "elf"; "f"]
+getKeys jo2 // should - ["elf"; "f"; "newfaq"]
+getKeys jo3 // should - ["newbuilts"; "newfaq"; "f"; "cappa"; "aba"]
+
+getKeysRecursive jo1 // should - ["aba"; "cappa"; "d"; "elf"; "f"]
+getKeysRecursive jo2 // should - ["elf"; "f"; "newfaq"; "faq"; "new"; "aba"]
+getKeysRecursive jo3 // should - ["newbuilts"; "newfaq"; "f"; "cappa"; "aba"]
 
 lab3 jo1 jo2 // should recieve ["elf", "f"]
 lab3 jo1 jo3 // should recieve ["aba"; "cappa"; "f"]
 lab3 jo2 jo3 // should recieve ["f"; "newfaq"]
+
+lab3Recursive jo1 jo2 // should recieve  ["aba"; "elf"; "f"]
+lab3Recursive jo1 jo3 // should recieve ["aba"; "cappa"; "f"]
+lab3Recursive jo2 jo3 // should recieve ["aba"; "f"; "newfaq"]
+
+let lr = generate()
+printfn "%s" (stringify lr)
+lab3 lr lr // should recieve all root keys
+lab3Recursive lr lr // should recieve all keys 
 
 projection jo1 (getKeys jo2)
 // should recieve [("f", JSON_Null); ("elf", JSON_Boolean false)]
