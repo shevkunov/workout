@@ -108,7 +108,7 @@ let parse (str : string) =
     let rec parse' (tokens : Token list) : (JSON * Token list) =
         let rec parse_list (acc : JSON list) (tokens : Token list) : (JSON * Token list) =
             match tokens with
-            | Null :: ts ->
+            | Null :: ts -> /// переписать под parse_obj
                 parse_list ((JSON_Null) :: acc) ts
             | String s :: ts ->
                 parse_list ((JSON_String s) :: acc) ts
@@ -130,7 +130,7 @@ let parse (str : string) =
 
         let rec parse_obj (acc : (string * JSON) list) (tokens : Token list) : (JSON * Token list) = 
             match tokens with
-            | String name :: Colon :: Null :: ts ->
+            | String name :: Colon :: Null :: ts -> /// переписать, как на семинаре - разбирать эту случаи два раза в parse и parseObj не нужно!
                 parse_obj ((string name, JSON_Null) :: acc) ts
             | String name :: Colon :: String s :: ts ->
                 parse_obj ((string name, JSON_String s) :: acc) ts
@@ -190,7 +190,7 @@ type JSON =
     | JSON_Boolean of bool
     | JSON_List of JSON list
     | JSON_Obj of (string * JSON) list
-   ******))))
+   ******)))))
      
 let rec stringify (json : JSON) : string =
     let s_name (s : string) : string = "\"" + s + "\""
@@ -224,9 +224,49 @@ let rec stringify (json : JSON) : string =
 let lab3 = function
   | Object list -> 0
 
+
 let generate = 
-  let rnd = new Random()
-  match rnd.Next(42) with
+    let rnd = new Random()
+    let rand ub = rnd.Next ub
+    let genBoolean = 
+        fun() -> (rand 2) = 1
+    let genNumber =
+        fun() -> rnd.Next()
+    let genChar = 
+        fun() -> sprintf "%c" (char ((int 'a') + (rand 26)))
+    let genStr len =
+        let rec genStr' (acc : string) = function
+            | l when l > 0 -> genStr' (acc + genChar()) (l - 1)
+            | _ -> acc
+        genStr' "" len
+    let genName =
+        fun() -> genStr ((rand 10) + 1) 
+    let rec genObj =
+        let MAX_FIELDS = 10
+        let genList = fun () ->
+            let MAX_LIST_LEN = 10
+            let rec genList' (acc : JSON list) (fCnt : int) : (JSON list) =
+                match fCnt with
+                | c when c > 0 -> genList' (genObj() :: acc) (c - 1)
+                | _ -> []
+            genList' [] MAX_LIST_LEN
+        let rec genObj' (acc : JSON.JSON_Obj) (fCnt : int) : JSON = 
+            let genField = fun() ->
+                let genObj'' = fun() ->
+                    match (rand 6) with
+                    | 0 -> JSON_Null
+                    | 1 -> JSON_Boolean (genBoolean())
+                    | 2 -> JSON_Number (genNumber())
+                    | 3 -> JSON_String (genName())
+                    | 4 -> JSON_List (genList()) 
+                    | 5 -> (genObj())
+                (genName(), genObj''()) 
+            match fCnt with
+            | c when c > 0 -> genObj' ((genField()) :: acc) (c - 1)
+            | _ -> acc
+        genObj' [] ((rand MAX_FIELDS) + 1)
+
+    match rnd.Next(42) with
     | 0 -> Object []
     | _ -> Object [("random", Object [])]
 
