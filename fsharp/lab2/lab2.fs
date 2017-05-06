@@ -168,7 +168,7 @@ let parse (str : string) =
 
 
 //*** Stringification ***//
-(*****
+(*
 let tokenToString = function
     | OpenBrace -> "{"
     | CloseBrace -> "}"
@@ -190,7 +190,7 @@ type JSON =
     | JSON_Boolean of bool
     | JSON_List of JSON list
     | JSON_Obj of (string * JSON) list
-   ******)))))
+   *)
      
 let rec stringify (json : JSON) : string =
     let s_name (s : string) : string = "\"" + s + "\""
@@ -221,11 +221,13 @@ let rec stringify (json : JSON) : string =
 
 //*** END Stringification ***//
 
-let lab3 = function
-  | Object list -> 0
+//*** BEGIN Random Generator ***//
 
-
-let generate = 
+let generate = fun() ->
+    let MAX_FIELDS = 10
+    let MAX_LIST_LEN = 5
+    let MAX_NAME_LEN = 10
+    let MAX_OBJ_DEPTH = 2
     let rnd = new Random()
     let rand ub = rnd.Next ub
     let genBoolean = 
@@ -240,35 +242,37 @@ let generate =
             | _ -> acc
         genStr' "" len
     let genName =
-        fun() -> genStr ((rand 10) + 1) 
-    let rec genObj =
-        let MAX_FIELDS = 10
+        fun() -> genStr ((rand MAX_NAME_LEN) + 1) 
+    let rec genObj (maxDepth : int) = 
         let genList = fun () ->
-            let MAX_LIST_LEN = 10
             let rec genList' (acc : JSON list) (fCnt : int) : (JSON list) =
                 match fCnt with
-                | c when c > 0 -> genList' (genObj() :: acc) (c - 1)
-                | _ -> []
-            genList' [] MAX_LIST_LEN
-        let rec genObj' (acc : JSON.JSON_Obj) (fCnt : int) : JSON = 
+                | c when c > 0 -> genList' ((genObj (maxDepth - 1)) :: acc) (c - 1)
+                | _ -> acc
+            genList' [] ((rand MAX_LIST_LEN) + 1)
+        let rec genObj' (acc : (string * JSON) list) (fCnt : int) : JSON = 
             let genField = fun() ->
                 let genObj'' = fun() ->
-                    match (rand 6) with
+                    let range = if maxDepth > 0 then 6 // all objects
+                                               else 4 // only non-recursive
+                    match rand range with
                     | 0 -> JSON_Null
                     | 1 -> JSON_Boolean (genBoolean())
                     | 2 -> JSON_Number (genNumber())
                     | 3 -> JSON_String (genName())
                     | 4 -> JSON_List (genList()) 
-                    | 5 -> (genObj())
+                    | _ -> ((genObj (maxDepth - 1)))
                 (genName(), genObj''()) 
             match fCnt with
             | c when c > 0 -> genObj' ((genField()) :: acc) (c - 1)
-            | _ -> acc
+            | _ -> JSON_Obj acc
         genObj' [] ((rand MAX_FIELDS) + 1)
+    genObj MAX_OBJ_DEPTH
+//*** END Random Generator ***//
+let lab3 = function
+  | Object list -> 0
 
-    match rnd.Next(42) with
-    | 0 -> Object []
-    | _ -> Object [("random", Object [])]
+    
 
 let main () = 
   let values = new NameValueCollection()
