@@ -304,9 +304,123 @@ let generate = fun() -> // this one generates only JSON_Obj,
 
 //*** END Random Generator ***//
 
-let lab3 = function
-  | Object list -> 0
+//*** BEGIN LAB 3 ***//
+// Вариант 6: Составить список из всех повторяющихся ключей двух JSON-объектов //
 
+let getKeys obj: (string list) =
+    let rec getKeys' (acc : string list) = function
+        | (name, _) :: fields -> getKeys' (name :: acc) fields
+        | [] -> acc
+    match obj with
+    | JSON_Obj obj -> List.rev (getKeys' [] obj)
+    | _ -> []
+
+let getKeysRecursive obj: (string list) =
+    let rec getKeysRecursive' (acc : string list) = function
+        | (name, field) :: fields -> match field with
+                                     | JSON_Obj fObj ->
+                                        let recKeys = getKeysRecursive' [] fObj
+                                        getKeysRecursive' (recKeys @ (name :: acc)) fields
+                                     |_ -> getKeysRecursive' (name :: acc) fields
+        | [] -> acc
+    match obj with
+    | JSON_Obj obj -> List.rev (getKeysRecursive' [] obj)
+    | _ -> []
+
+let intersect list1 list2 =
+    let l1 = List.sortDescending list1
+    let l2 = List.sortDescending list2
+    let rec intersect' l1 l2 acc =
+        match (l1, l2) with
+        | ([], _) -> acc
+        | (_, []) -> acc
+        | (h1 :: t1, h2 :: t2) -> if h1 = h2 then 
+                                      intersect' t1 t2 (h1 :: acc)
+                                  else 
+                                      if h1 > h2 then
+                                          intersect' t1 (h2 :: t2) acc
+                                      else
+                                          intersect' (h1 :: t1) t2  acc
+    intersect' l1 l2 []
+
+let projection obj keys =
+    let rec proj' acc (obj : (string * JSON) list) keys =
+        match (obj, keys) with
+        | ([], _) -> acc
+        | (_, []) -> acc
+        | ( (name, field) :: tail, hkey :: tkey) -> if (name = hkey) then
+                                                        proj' ((name, field) :: acc) tail tkey
+                                                    else
+                                                        if (name < hkey) then
+                                                            proj' acc tail (hkey :: tkey)
+                                                        else
+                                                            proj' acc ((name, field) :: tail) tkey
+    match obj with
+    | JSON_Obj obj -> 
+        let sortedObj = List.sortWith (fun (n1, f1) (n2, f2) -> String.Compare(n1, n2)) obj 
+        List.rev (proj' [] sortedObj (List.sort keys))
+    | _ -> []
+
+let lab3 obj1 obj2 =
+    intersect (getKeys obj1) (getKeys obj2)
+//*** TEST LAB 3 ***//
+let j1 = """
+{
+    "aba":"bvgd",
+    "cappa":{
+        "d":[1,2]
+        },
+    "elf":false,
+    "f":null
+}
+"""
+
+let j2 = """
+{
+    "elf":true,
+    "f":5,
+    "newfaq":{
+        "faq":true,
+        "new":{
+            "aba":"v"
+        } 
+    }
+}
+"""
+
+let j3 = """
+{
+    "newbuilts":"yellow",
+    "newfaq":[1,4,5,9],
+    "f":[8,9,7],
+    "cappa":null,
+    "aba":"baba"
+}
+"""
+
+
+let jo1 = parse j1
+
+let jo2 = parse j2
+
+let jo3 = parse j3
+
+lab3 jo1 jo2 // should recieve ["elf", "f"]
+lab3 jo1 jo3 // should recieve ["aba"; "cappa"; "f"]
+lab3 jo2 jo3 // should recieve ["f"; "newfaq"]
+
+projection jo1 (getKeys jo2)
+// should recieve [("f", JSON_Null); ("elf", JSON_Boolean false)]
+
+projection jo2 (getKeys jo3)
+// should recieve [("newfaq", JSON_Obj [("faq", JSON_Boolean true);
+// ("new", JSON_Boolean false)]);("f", JSON_Number 5)]
+
+projection jo3 (getKeys jo1)
+// should recieve [("aba", JSON_String "baba"); ("cappa", JSON_Null);
+//   ("f", JSON_List [JSON_Number 8; JSON_Number 9; JSON_Number 7])]
+
+//*** END LAB 3 ***//
     
 
 let main () = 
