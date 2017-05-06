@@ -7,8 +7,6 @@ open System.Collections.Specialized
 // почтовый адрес
 let email = ""
 
-//*** Tokenizer ***//
-
 let json = """
 {
     "a":"bvgd",
@@ -46,6 +44,7 @@ type Token = OpenBrace | CloseBrace | OpenBracket | CloseBracket | Colon | Comma
             | Null | String of string | Number of int | Boolean of bool
             /// is True | False needed?
 
+//*** Tokenizer ***//
 let tokenize source = 
     let appendChar str char =
         sprintf "%s%c" str char
@@ -131,20 +130,9 @@ let parse (str : string) =
 
         let rec parse_obj (acc : (string * JSON) list) (tokens : Token list) : (JSON * Token list) = 
             match tokens with
-            | String name :: Colon :: Null :: ts -> /// переписать, как на семинаре - разбирать эту случаи два раза в parse и parseObj не нужно!
-                parse_obj ((string name, JSON_Null) :: acc) ts
-            | String name :: Colon :: String s :: ts ->
-                parse_obj ((string name, JSON_String s) :: acc) ts
-            | String name :: Colon :: Number n :: ts ->
-                parse_obj ((string name, JSON_Number n) :: acc) ts
-            | String name :: Colon :: Boolean b :: ts ->
-                parse_obj ((string name, JSON_Boolean b) :: acc) ts
-            | String name :: Colon :: OpenBrace :: ts ->
-                let (obj, ts') = parse_obj [] ts
-                parse_obj ((string name, obj) :: acc) ts'
-            | String name :: Colon :: OpenBracket :: ts ->
-                let (lst, ts') = parse_list [] ts
-                parse_obj ((string name, lst) :: acc) ts'
+            | String name :: Colon :: ts ->
+                let (obj, ts') = parse' ts
+                parse_obj ((name, obj) :: acc) ts'
             | Comma :: ts -> 
                 parse_obj acc ts
             | CloseBrace :: ts ->
@@ -165,7 +153,13 @@ let parse (str : string) =
     | [] -> obj
     | _ -> failwith "json parse' error"
 //*** TEST Parse ***//
+tokenize (explode json) // Обьявление выше
+tokenize (explode json2)
 
+parse json // Обьявление выше
+parse json2
+
+/// Больше тестирований - в разделе генератора
 //*** ENG Parse ***//
 
 
@@ -236,6 +230,8 @@ printfn "%s" (stringify (parse json))
 
 printfn "%s" (plainStringify (parse json2))
 printfn "%s" (stringify (parse json2))
+
+//Больше тестирований - в разделе генератора
 //*** END Stringification ***//
 
 //*** BEGIN Random Generator ***//
