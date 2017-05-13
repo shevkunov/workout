@@ -3,9 +3,26 @@ open System.IO
 open System.Net
 open System.Text
 open System.Collections.Specialized
+open System.Globalization
+open System.Text.RegularExpressions
+
+
+//*** BEGIN README ***//
+/// Это вторая ревизия задания (первая была выслана ещё до
+/// первого дедлайна - 06.05)
+/// Изменения : Number, умеющий в int/double
+/// добавлен более-менее парсер escape-последовательностей
+
+/// Каждое подзадание выделено комментариями BEGIN - TEST - END 
+/// Весь код между BEGIN и TEST можно запустить разом - все тесты
+/// и вывод содержится между TEST и  END
+
+/// Задание lab3 перемещено в конец. Обратите внимание,
+/// что lab3 и lab3Recursive - это 
+
 
 // почтовый адрес
-let email = ""
+let email = "howtodo@ya.ru"
 
 let json = """
 {
@@ -35,14 +52,27 @@ let json2 = """
 }
 """
 
+let json3 = """
+{
+    "float1" : 0.5,
+    "float2" : -0.228,
+    "float3" : 1e10
+    "int1" : 17,
+    "int2" : -1997,
+    "strangestring" : "Tank \\ \"Mark-V\" \\"
+}
+"""
+
 open System 
 
 let explode (s:string) = [for i in s -> i]
+let implode (list : char list) = 
+    List.fold(fun acc c -> acc + (string c)) "" list
 
 //*** BEGIN Parse ***//
+type Number = Int of int | Float of float
 type Token = OpenBrace | CloseBrace | OpenBracket | CloseBracket | Colon | Comma
-            | Null | String of string | Number of int | Boolean of bool
-            /// is True | False needed?
+            | Null | String of string | Number of Number | Boolean of bool
 
 //*** Tokenizer ***//
 let tokenize source = 
@@ -53,17 +83,39 @@ let tokenize source =
         (int char) - (int '0')
 
     let rec parseString acc = function
-        |  '"' :: t -> (acc, t) //'"
+        | '"' :: t -> (acc, t) //'"
         | '\\' :: 'n' :: t -> parseString (acc + "\n") t
+        | '\\' :: 'r' :: t -> parseString (acc + "\r") t
+        | '\\' :: 't' :: t -> parseString (acc + "\t") t
+        | '\\' :: '\'' :: t -> parseString (acc + "\'") t
+        | '\\' :: '\"' :: t -> parseString (acc + "\"") t
+        | '\\' :: '\\' :: t -> parseString (acc + "\\") t //'"
+        | '\\' :: '/' :: t -> parseString (acc + "/") t
+        | '\\' :: 'b' :: t -> parseString (acc + "\b") t
+        | '\\' :: 'f' :: t -> parseString (acc + "\u000C") t
+        | '\\' :: 'u' :: a :: b :: c :: d :: t ->
+            let s = implode('\\' :: 'u' :: a :: b :: c :: [d])
+            parseString (appendChar acc (char (Int32.Parse(s.Substring(2), NumberStyles.HexNumber)))) t
         | c :: t -> parseString (appendChar acc c) t
         | _ -> failwith "string parser error"
         // What should we do if line brakes?
 
+    let isNumberChar c =
+        (Char.IsDigit c) || (c = '-') || (c = '+') || (c = '.')
+
     let rec parseNumber acc = function
-        | digit :: t when (Char.IsDigit digit) ->
-                    parseNumber (acc * 10 + (charToInt digit)) t
-        | char :: t -> (acc, char :: t)
-        | [] -> (acc, [])
+        | digit :: t when (isNumberChar digit) || (digit = 'e') || (digit = 'E')  ->
+                    parseNumber (appendChar acc  digit) t
+        | list -> (acc, list)
+       
+    let strToNumber x =
+        if not (Regex("\A[\-]?([0]|[1-9][0-9]*)([\.][0-9]+)?([eE][\+\-]?[0-9]+)?\z")
+            .IsMatch(x)) then failwith ("Bad number" + x)
+        else 
+            if (x.Contains(".") || x.Contains("E") || x.Contains("e")) then
+                Number.Float(float x)
+            else
+                Number.Int(int x)
 
     let rec tokenize' acc = function
         | w :: t when (Char.IsWhiteSpace w) -> tokenize' acc t
@@ -76,9 +128,9 @@ let tokenize source =
         | 'n'::'u'::'l'::'l'::t -> tokenize' (Null :: acc) t
         | '"'::t -> let (s, t') = parseString "" t //"
                     tokenize' (String s :: acc) t' 
-        | digit :: t when (Char.IsDigit digit) ->
-                    let (n, t') = parseNumber (charToInt digit) t
-                    tokenize' (Number n :: acc) t'
+        | digit :: t when (isNumberChar digit) -> 
+                    let (n, t') = parseNumber "" (digit :: t)
+                    tokenize' (Number (strToNumber n) :: acc) t'
         | 't'::'r'::'u'::'e'::t -> tokenize' (Boolean true :: acc) t
         | 'f'::'a'::'l'::'s'::'e'::t -> tokenize' (Boolean false :: acc) t
         | [] -> acc
@@ -93,7 +145,7 @@ let tokenize source =
 type JSON = 
     | JSON_Null
     | JSON_String of string
-    | JSON_Number of int
+    | JSON_Number of Number
     | JSON_Boolean of bool
     | JSON_List of JSON list
     | JSON_Obj of (string * JSON) list
@@ -108,25 +160,12 @@ let parse (str : string) =
     let rec parse' (tokens : Token list) : (JSON * Token list) =
         let rec parse_list (acc : JSON list) (tokens : Token list) : (JSON * Token list) =
             match tokens with
-            | Null :: ts -> /// переписать под parse_obj
-                parse_list ((JSON_Null) :: acc) ts
-            | String s :: ts ->
-                parse_list ((JSON_String s) :: acc) ts
-            | Number n :: ts ->
-                parse_list ((JSON_Number n) :: acc) ts
-            | Boolean b :: ts ->
-                parse_list ((JSON_Boolean b) :: acc) ts
-            | OpenBrace :: ts ->
-                let (obj, ts') = parse' (OpenBrace :: ts)
-                parse_list ((obj) :: acc) ts'
-            | OpenBracket :: ts ->
-                let (lst, ts') = parse_list [] ts
-                parse_list ((lst) :: acc) ts'
             | Comma :: ts -> 
                 parse_list acc ts
             | CloseBracket :: ts ->
                 (JSON_List (List.rev acc), ts)
-            | _ -> failwith "parse_list error"
+            | ts -> let (obj, ts') = parse' ts
+                    parse_list (obj :: acc) ts'
 
         let rec parse_obj (acc : (string * JSON) list) (tokens : Token list) : (JSON * Token list) = 
             match tokens with
@@ -155,9 +194,11 @@ let parse (str : string) =
 //*** TEST Parse ***//
 tokenize (explode json) // Обьявление выше
 tokenize (explode json2)
+tokenize (explode json3)
 
 parse json // Обьявление выше
 parse json2
+parse json3
 
 /// Больше тестирований - в разделе генератора
 //*** ENG Parse ***//
@@ -168,7 +209,25 @@ parse json2
 
 let rec tabbedStringify (prefix : string) (tab : string) (json : JSON) : string =
     let itself = tabbedStringify (prefix + tab) tab
-    let s_name (s : string) : string = "\"" + s + "\""
+
+    let print_char = function
+        | '\"' -> "\\\"" 
+        | '\\' -> "\\\\" //'" (syntax highlining broken : ( )
+        | '/' -> "\\/" 
+        | '\b' -> "\\b"
+        | '\u000C' -> "\\f"
+        | '\n' -> "\\n"
+        | '\r' -> "\\r"
+        | '\t' -> "\\t"
+        | c -> Convert.ToString c
+
+    let s_name (s : string) : string =
+        "\"" + String.collect print_char s + "\""
+
+    let print_number (x : Number) : string =
+        match x with
+        | Float f -> sprintf "%f" f
+        | Int i -> sprintf "%d" i
 
     let rec print_list (acc : string) (l : JSON list) : string = 
         match l with
@@ -187,7 +246,7 @@ let rec tabbedStringify (prefix : string) (tab : string) (json : JSON) : string 
     match json with
     | JSON_Null -> "null"
     | JSON_String s -> s_name s
-    | JSON_Number n -> sprintf "%d" n
+    | JSON_Number n -> print_number n
     | JSON_Boolean b -> match b with
                         | true -> "true"
                         | _ -> "false"
@@ -195,7 +254,24 @@ let rec tabbedStringify (prefix : string) (tab : string) (json : JSON) : string 
     | JSON_Obj o -> "{\n" + (print_obj "" o) + "\n" + prefix + "}"
    
 let rec plainStringify (json : JSON) : string =
-    let s_name (s : string) : string = "\"" + s + "\""
+    let print_char = function
+        | '\"' -> "\\\"" 
+        | '\\' -> "\\\\" //'" (syntax highlining broken : ( )
+        | '/' -> "\\/" 
+        | '\b' -> "\\b"
+        | '\u000C' -> "\\f"
+        | '\n' -> "\\n"
+        | '\r' -> "\\r"
+        | '\t' -> "\\t"
+        | c -> Convert.ToString c
+
+    let s_name (s : string) : string =
+        "\"" + String.collect print_char s + "\""
+
+    let print_number (x : Number) : string =
+        match x with
+        | Float f -> sprintf "%f" f
+        | Int i -> sprintf "%d" i
 
     let rec print_list (acc : string) (l : JSON list) : string = 
         match l with
@@ -214,7 +290,7 @@ let rec plainStringify (json : JSON) : string =
     match json with
     | JSON_Null -> "null"
     | JSON_String s -> s_name s
-    | JSON_Number n -> sprintf "%d" n
+    | JSON_Number n -> print_number n
     | JSON_Boolean b -> match b with
                         | true -> "true"
                         | _ -> "false"
@@ -231,6 +307,11 @@ printfn "%s" (stringify (parse json))
 printfn "%s" (plainStringify (parse json2))
 printfn "%s" (stringify (parse json2))
 
+printfn "%s" (plainStringify (parse json3))  
+printfn "%s" (stringify (parse json3)) /// << see json3 defenition
+
+printfn "%s" (stringify (parse (stringify (parse json3))))
+
 //Больше тестирований - в разделе генератора
 //*** END Stringification ***//
 
@@ -246,7 +327,10 @@ let generate = fun() -> // this one generates only JSON_Obj,
     let genBoolean = 
         fun() -> (rand 2) = 1
     let genNumber =
-        fun() -> rnd.Next()
+        fun() -> if genBoolean() then
+                    Int(rnd.Next())
+                 else 
+                    Float(rnd.NextDouble())
     let genChar = 
         fun() -> sprintf "%c" (char ((int 'a') + (rand 26)))
     let genStr len =
