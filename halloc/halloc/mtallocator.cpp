@@ -4,16 +4,46 @@
  **/
 
 #include <vector>
+#include <iostream>
 #include <mutex>
 
-class Logger {
+
+#define _Log
+
+class Log {
+public:
+    template <typename T>
+    static inline void out(const T& s) {
+        (void) s; // чтоб не был предупреждений
+    #ifdef _Log
+        std::cout << "Log:" << s << "\n";
+        std::cout.flush();
+    #endif
+    }
+
+    template <typename T, typename ... Ts>
+    static inline void out(const T& s, Ts ... ss) {
+        (void) s; // чтоб не был предупреждений
+    #ifdef _Log
+        std::cout << "Log:" << s << "\n";
+        std::cout.flush();
+    #endif
+        out(ss...);
+    }
+
 private:
-    Logger() {
+    Log() {
         // я не такая
     }
 };
 
+
+
 class Halloc {
+public:
+    void* malloc(const size_t& alloc_size);
+    void free(void* pointer);
+private:
 
 };
 
@@ -27,9 +57,14 @@ class Halloc {
 extern Halloc _hoard_allocator; // Стоило бы сделать singleton, но пофиг
 
 extern void* mtalloc(size_t alloc_size) {
-    return _hoard_allocator.malloc(alloc_size);
+    Log::out("Attempt to alloc:", alloc_size);
+    void* allocated = _hoard_allocator.malloc(alloc_size);
+    Log::out("Allocated:", allocated);
+    return allocated;
 }
 
 extern void mtfree(void* pointer) {
-    return _hoard_allocator.free(pointer);
+    Log::out("Attempt to free:", pointer);
+    _hoard_allocator.free(pointer);
+    Log::out("Free:", pointer);
 }

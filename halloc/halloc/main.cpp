@@ -6,43 +6,20 @@
 
 using namespace std;
 
-#define LOG
-
-/**** LOGGER BEGIN ****/
-
-template <typename T>
-inline void log(const T &s) {
-#ifdef LOG
-    std::cout << "LOG:" << s << "\n";
-    std::cout.flush();
-#endif
-}
-
-template <typename T, typename ... Ts>
-inline void log(const T &s, Ts ... ss) {
-#ifdef LOG
-    std::cout << "LOG:" << s << "\n";
-    std::cout.flush();
-    log(ss...);
-#endif
-}
-
-/**** LOGGER END ****/
-
 extern void* mtalloc(size_t bytes);
 extern void mtfree(void* ptr);
 
 void write(void* ptr, size_t size, char id) {
-    log("write - begin", ptr);
+    //log("write - begin", ptr);
     char* mem = reinterpret_cast<char*> (ptr);
     for (size_t i = 0; i < size; ++i) {
         mem[i] = id;
     }
-    log("write - end");
+    //log("write - end");
 }
 
 bool read(void* ptr, size_t size, char id) {
-    log("read - begin", ptr);
+    //log("read - begin", ptr);
     char* mem = reinterpret_cast<char*> (ptr);
     char lo = mem[0];
     char hi = mem[0];
@@ -50,7 +27,7 @@ bool read(void* ptr, size_t size, char id) {
         lo = (mem[i] < lo) ? mem[i] : lo;
         hi = (mem[i] > hi) ? mem[i] : hi;
     }
-    log("read - end");
+    //log("read - end");
     return (lo == hi) && (hi == id);
 }
 
