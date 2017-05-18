@@ -163,7 +163,63 @@ public:
 
         if (provider != nullptr) {
             // захвачен halloc'ом
-            size_t current
+            size_t current_heap_id = _global_heap_id;
+            Heap* current_heap = _global_heap;
+
+            // карусель-карусель это праааздник для нас,
+            // прокатись на нашей карусееели
+            for (; current_heap_id != provider->_owner;
+                 current_heap->mutex.unlock()) {
+
+                current_heap_id = provide->_owner;
+                if (current_heap_id == _global_heap_id) {
+                    _global_heap->mutex.lock();
+                    current_heap = _global_heap;
+                } else {
+                    _thread_heaps_array[current_heap_id]->mutex.lock();
+                    current_heap = _thread_heaps_array=[current_heap_id];
+                }
+            }
+
+            // мы нашли его
+            Tray& current_tray =
+                    current_heap->get_tray_by_size(provider->_size);
+
+            // отпускаем блок и грехи
+            current_tray->_used -= provider->_size;
+            provider->_used -= provider->_size;
+
+            current_tray->release_block(pointer);
+
+            if (current_heap_id != _global_heap_id) {
+                used = current_tray._used;
+                allocated = current_tray._allocated;
+
+
+                // магия статьи
+                if ((used +_superblocks_free_ratio * _superblock_size <
+                     allocated) && (used * _empty_fraction_ratio + allocated <
+                     allocated * _empty_fraction_ratio)) {
+                    std::unique_lock <std::mutex> lock(_global_heap->mutex);
+                    Tray& g_tray =
+                            _global_heap->get_tray_by_size(provider->_size);
+
+                    SuperBlock* almost_full_block
+                            = current_tray.cut_almost_full_superblock();
+
+                    // super_block move
+                    almost_full_block->_owner = _global_heap_id;
+
+                    g_tray._used += almost_full_block->_used;
+                    g_tray._allocated += _superblock_size;
+
+                    current_heap->_used -= almost_full_block->_used;
+                    current_heap->_allocated -= _superblock_size;
+
+                    g_tray.push_superblock(almost_full_block);
+                }
+            }
+            current_heap->mutex.unlock();
         } else {
             // захвачен напрямую
             munmap(pointer, header->_mmap_size);
@@ -179,8 +235,6 @@ private:
     size_t _thread_heaps_count;
     Heap** _thread_heaps_array;
     Heap* _global_heap;
-
-
 
     class SuperBlock {
     public:
