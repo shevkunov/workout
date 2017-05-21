@@ -1,15 +1,17 @@
 ﻿<Properties StartupItem="Seminars/Seminars.fsproj">
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|x86" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Seminars/Seminars.fs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="../mipt2017/seminars/sem13.fs">
     <Files>
-      <File FileName="Seminars/Seminars.fs" Line="1043" Column="6" />
+      <File FileName="Seminars/Seminars.fs" Line="1" Column="1" />
       <File FileName="Seminars/AssemblyInfo.fs" Line="1" Column="1" />
       <File FileName="../mipt2017/lab0/lab0.fs" Line="1" Column="1" />
       <File FileName="../mipt2017/lab1/lab1.fs" Line="1" Column="1" />
       <File FileName="../mipt2017/seminars/sem8.fs" Line="1" Column="1" />
       <File FileName="../mipt2017/seminars/sem4-7.fs" Line="1" Column="1" />
       <File FileName="../mipt2017/seminars/sem9.fs" Line="1" Column="1" />
-      <File FileName="../mipt2017/lab2/lab2.fs" Line="1" Column="1" />
+      <File FileName="../lab2/lab2.fs" Line="518" Column="11" />
+      <File FileName="../mipt2017/seminars/sem11-12.fs" Line="32" Column="1" />
+      <File FileName="../mipt2017/seminars/sem13.fs" Line="647" Column="18" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

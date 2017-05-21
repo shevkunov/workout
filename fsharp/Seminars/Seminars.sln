@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Seminars", "Seminars\Seminars.fsproj", "{C0719D26-835E-41D0-9B20-C3B99918D6C5}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{29017EF7-C392-4D5A-9386-0CA32E0D6719}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -13,5 +15,7 @@ Global
 		{C0719D26-835E-41D0-9B20-C3B99918D6C5}.Debug|x86.Build.0 = Debug|x86
 		{C0719D26-835E-41D0-9B20-C3B99918D6C5}.Release|x86.ActiveCfg = Release|x86
 		{C0719D26-835E-41D0-9B20-C3B99918D6C5}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
 	EndGlobalSection
 EndGlobal

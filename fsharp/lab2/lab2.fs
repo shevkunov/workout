@@ -8,6 +8,7 @@ open System.Text.RegularExpressions
 
 
 //*** BEGIN README ***//
+
 /// Это вторая ревизия задания (первая была выслана ещё до
 /// первого дедлайна - 06.05)
 /// Изменения : Number, умеющий в int/double
@@ -18,8 +19,10 @@ open System.Text.RegularExpressions
 /// и вывод содержится между TEST и  END
 
 /// Задание lab3 перемещено в конец. Обратите внимание,
-/// что lab3 и lab3Recursive - это 
+/// что lab3 и lab3Recursive - это РАЗНЫЕ решение
+/// т.к. я не понял, что требуется в условии - написал оба варианта.
 
+//*** END README ***//
 
 // почтовый адрес
 let email = "howtodo@ya.ru"
