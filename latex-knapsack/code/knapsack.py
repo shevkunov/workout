@@ -8,7 +8,7 @@ def knapsack_pseudopolynomial_nc(W, weights, costs):
     weight и costs - numpy.ndarray или эквивалентные"""
 
     assert weights.shape == costs.shape
-    assert weights.dtype == int
+    # assert weights.dtype == int
     assert costs.dtype == int
     assert (weights > 0).all()
     assert (costs > 0).all()
@@ -48,8 +48,8 @@ def knapsack_brutal(W, weights, costs):
     weight и costs - numpy.ndarray или эквивалентные"""
 
     assert weights.shape == costs.shape
-    assert weights.dtype == int
-    assert costs.dtype == int
+    # assert weights.dtype == int
+    # assert costs.dtype == int
     assert (weights > 0).all()
     assert (costs > 0).all()
 
@@ -73,13 +73,15 @@ def knapsack_brutal(W, weights, costs):
 
     return best
 
-def knapsack_integer_stress_test_nw(n, w, maxcost=10):
+def knapsack_integer_stress_test_nw(n, w, maxcost=10,
+                                    algo1 = knapsack_brutal,
+                                    algo2 = knapsack_pseudopolynomial_nc):
     costs = np.random.randint(low=0, high=maxcost, size=n) + 1
     weights = np.random.randint(low=0, high=w+2, size=n) + 1
     # costs = np.array([1, 10, 6, 5, 2])
     # weights = np.array([5, 7, 1, 6, 5])
-    c2, ans2 = knapsack_brutal(w, weights, costs)
-    c1, ans1 = knapsack_pseudopolynomial_nc(w, weights, costs)
+    c2, ans2 = algo1(w, weights, costs)
+    c1, ans1 = algo2(w, weights, costs)
 
     print("===TEST===")
     print("weights = ", weights)
@@ -91,19 +93,45 @@ def knapsack_integer_stress_test_nw(n, w, maxcost=10):
     assert costs[ans1].sum() == c1
     assert c1 == c2
 
-def knapsack_integer_stress_test(max_n = 10, max_w = 10, max_i = 10):
+def knapsack_integer_stress_test(max_n = 10, max_w = 10, max_i = 10,
+                                algo1 = knapsack_brutal,
+                                algo2 = knapsack_pseudopolynomial_nc):
     for n in range(max_n):
         for w in range(max_w):
             for i in range(max_i):
-                knapsack_integer_stress_test_nw(n, w, maxcost = 20)
+                knapsack_integer_stress_test_nw(n, w, maxcost = 20,
+                                                algo1 = algo1,
+                                                algo2 = algo2)
 
-knapsack_integer_stress_test();
+def knapsack_polynomial_estimation(W, weights, costs, eps):
+    """Полиномиальное приближение задачи о рюкзаке.
+    W - вместимость рюкзака
+    weights - веса предметов
+    costs - стоимости предметов
+    eps - точность приближения (должна быть 0 < eps < 1) """
 
-def
+    assert W >= 0
+    assert weights.shape == costs.shape
+    assert 0 < eps < 1
+    # assert (weights > 0).all()
+    # assert (costs > 0).all()
+    n = len(weights)
+    P = costs[weights < W].max()
+    K = eps * P / n
+    # print(K)
+    costs_zipped = (np.copy(costs) / K).astype(int)
+
+    # print(costs_zipped)
+    _, ans = knapsack_pseudopolynomial_nc(int(W), weights, costs_zipped)
+    return costs[ans].sum(), ans
+
+knapsack_integer_stress_test()
+
 """
 costs = np.array([2, 3, 4])
 weights = np.array([1, 2, 3])
 w = 5
+print(knapsack_polynomial_estimation(w, weights, costs, 0.9))
 print(knapsack_pseudopolynomial_nc(w, weights, costs))
 print(knapsack_brutal(w, weights, costs))
 """
