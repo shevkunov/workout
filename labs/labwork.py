@@ -52,7 +52,7 @@ def plt_lab_figure(X_max, Y_max, X_min=0, Y_min=0, k_off_x=1.05, k_off_y=1.05):
     plt.xlim((X_min / k_off_x, X_max * k_off_x))
     plt.ylim((Y_min / k_off_y, Y_max * k_off_y))
 
-def linPlot(x, y, xlabel="", ylabel="", title="", figsize=(14,7), fontsize=15, labplot=False):
+def linPlot(x, y, xlabel="", ylabel="", title="", figsize=(14,7), fontsize=15, labplot=False, plot_to_zero=False):
     """Строит график измерений x,y и линейное приближение
     зависимости по МНК (y = bx + a).
     Возвращает: a, b, sigma_a, sigma_b"""
@@ -61,7 +61,10 @@ def linPlot(x, y, xlabel="", ylabel="", title="", figsize=(14,7), fontsize=15, l
     else:
         plt_lab_figure(x.max(), y.max())
     a, b, sigma_a, sigma_b = eval_mnk(x, y)
-    xs = np.array([x.min(), x.max()])
+    xs = [x.min(), x.max()]
+    if plot_to_zero:
+        xs.append(0)
+    xs = np.array(xs)
     plt.plot(xs, b*xs + a, label="Оценка МНК")
     plt.scatter(x, y, label="Измерения", color="red")
     plt.xlabel(xlabel, fontsize=fontsize)
