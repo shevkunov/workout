@@ -4,10 +4,24 @@ from knapsack import *
 def knapsack_stress_test_nw(n, w, eps=None, maxcost=10, mincost=1,
                             algo=knapsack_pseudopolynomial_nc,
                             checker=knapsack_brutal,
+                            cluster_test=False,
                             float_numbers=False,
                             log=None,
                             print_log=True):
-    if not float_numbers:
+    assert not (cluster_test and float_numbers)
+    if cluster_test:
+        costs = []
+        length = len(mincost)
+        for i in range(length):
+            step_length = (
+                n // length if i + 1 != length else n - len(costs)
+            )
+            costs += list(np.random.randint(low=mincost[i],
+                                            high=maxcost[i],
+                                            size=step_length))
+        costs = np.array(costs)
+        weights = np.random.randint(low=1, high=w + 2, size=n)
+    elif not float_numbers:
         costs = np.random.randint(low=mincost, high=maxcost, size=n)
         weights = np.random.randint(low=1, high=w + 2, size=n)
     else:
@@ -50,6 +64,7 @@ def knapsack_stress_test(n_range=range(0, 10),
                          eps=None,
                          algo=knapsack_pseudopolynomial_nc,
                          checker=knapsack_brutal,
+                         cluster_test=False,
                          float_numbers=False,
                          log=None,
                          print_log=True):
@@ -62,6 +77,7 @@ def knapsack_stress_test(n_range=range(0, 10),
                                         eps=eps,
                                         algo=algo,
                                         checker=checker,
+                                        cluster_test=cluster_test,
                                         float_numbers=float_numbers,
                                         log=log,
                                         print_log=print_log)

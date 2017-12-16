@@ -129,6 +129,7 @@ print("Mean accuracy = ", mean_accuracy)
 
 
 ### Тест большими по модулю, и близкими числами.
+"""
 log = []
 knapsack_stress_test(n_range=[15], w_range=[15], i_count=30,
                      maxcost=10000, mincost=9995,
@@ -146,12 +147,45 @@ mean_accuracy = ((np_log[np_non_zero, 0] / np_log[np_non_zero, 1]).sum() + len(
     log) - np_non_zero.sum()) / len(log)
 print("Mean accuracy = ", mean_accuracy)
 
+"""
 # Test =  30
 # Total different =  21
 # Mean accuracy =  0.999953226882
 # На больших по модулю, но близких числах алгоритм даёт неоптимальный
 # ответ, что очевидно - по сути своей алгоритм округляет
 # несколько близких чисел в одно.
+
+
+
+
+
+### Тест с двумя кластерами
+log = []
+knapsack_stress_test(n_range=[15], w_range=[15], i_count=30,
+                     maxcost=[3005, 5005], mincost=[3000, 5000],
+                     algo=knapsack_polynomial_estimation,
+                     cluster_test=True, float_numbers=False,
+                     eps=0.1, log=log, print_log=False)
+
+print("Test = ", len(log))
+np_log = []
+for i in range(len(log)):
+    np_log.append([log[i][-4], log[i][-2]])
+np_log = np.array(np_log)
+print("Total different = ", (np.abs(np_log[:, 0] - np_log[:, 1]) > 1e-9).sum())
+np_non_zero = np_log[:, 1] != 0
+mean_accuracy = ((np_log[np_non_zero, 0] / np_log[np_non_zero, 1]).sum() + len(
+    log) - np_non_zero.sum()) / len(log)
+print("Mean accuracy = ", mean_accuracy)
+
+# Test =  30
+# Total different =  3
+# Mean accuracy =  0.999982242818
+# При увеличении числа кластеров, но постоянном числе предметов число тестов,
+# на которых оптимальный ответ отличается от ответа полиномиального приближения
+# значительно уменьшилось (3 / 30 против 21/30 для одного кластера)
+# точность при этом осталась на высоком уровне.
+
 
 
 
