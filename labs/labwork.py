@@ -142,4 +142,9 @@ def sciRoundR(V, V_R, unit=""):
         
         result + " (" + str(V_R_int * 10 ** (-shift_r+2)) + "%)"
     )
-    
+
+def sciRoundD(V, V_D, unit=""):
+    """По числу V и его абсолютной погрешности V_R
+    возвращает строку, в которой число округлено по
+    правилам лобораторных работ"""
+    return sciRoundR(V, V_D / V, unit=unit)
